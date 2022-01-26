@@ -10,7 +10,7 @@ import (
 const (
 	filterTable               = "filter"
 	outputChain               = "OUTPUT"
-	dockerUserChain           = "DOCKER_USER"
+	dockerUserChain           = "DOCKER-USER"
 	dockerInterface           = "docker0"
 	defaultInterface          = "eth0"
 	inbound                   = "-i"
@@ -49,6 +49,42 @@ func addBlockRulesForGitHubHostedRunner(firewall *Firewall, endpoints []ipAddres
 	err = addBlockRules(firewall, endpoints, dockerUserChain, dockerInterface, inbound)
 	if err != nil {
 		return errors.Wrap(err, "failed to add block rules for docker interface")
+	}
+
+	err = blockIPv6OutboundTraffic()
+	if err != nil {
+		return errors.Wrap(err, "failed to add block rule for ipv6 traffic")
+	}
+
+	return nil
+}
+
+func blockIPv6OutboundTraffic() error {
+
+	ipt6, err := iptables.New(iptables.IPFamily(iptables.ProtocolIPv6), iptables.Timeout(5))
+	if err != nil {
+		return errors.Wrap(err, "new ip6tables failed")
+	}
+	// clearing the OUTPUT chain of FILTER TABLE.
+	err = ipt6.ClearChain(filterTable, outputChain)
+	if err != nil {
+		return errors.Wrap(err, "unable to clean IPv6 output-chain rules")
+	}
+	// adding rule to block all IPv6 output traffic.
+	err = ipt6.Append(filterTable, outputChain, outbound, defaultInterface, protocol, allProtocols, target, reject)
+	if err != nil {
+		return errors.Wrap(err, "unable to add ipv6 block rule for default interface")
+	}
+
+	// clearing the DOCKER_USER chain
+	err = ipt6.ClearChain(filterTable, dockerUserChain)
+	if err != nil {
+		return errors.Wrap(err, "unable to clean IPv6 output-chain rules")
+	}
+	// adding rule to block all IPv5 inbound traffic for docker
+	err = ipt6.Append(filterTable, dockerUserChain, inbound, dockerInterface, protocol, allProtocols, target, reject)
+	if err != nil {
+		return errors.Wrap(err, "unable to add ipv6 block rule for docker")
 	}
 
 	return nil
@@ -279,6 +315,14 @@ func RevertFirewallChanges(firewall *Firewall) error {
 
 	ipt.ClearChain("filter", "OUTPUT")
 	ipt.ClearChain("filter", "DOCKER-USER")
+
+	ipt6, err := iptables.New(iptables.IPFamily(iptables.ProtocolIPv6), iptables.Timeout(5))
+	if err != nil {
+		return errors.Wrap(err, "new ip6tables failed")
+	}
+
+	ipt6.ClearChain(filterTable, outputChain)
+	ipt6.ClearChain(filterTable, dockerUserChain)
 
 	return nil
 }
