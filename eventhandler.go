@@ -163,7 +163,7 @@ func printContainerInfo(pid, ppid string) {
 func (eventHandler *EventHandler) handleNetworkEvent(event *Event) {
 	eventHandler.netMutex.Lock()
 
-	if !isPrivateIPAddress(eventHandler.DNSProxy, event.IPAddress) &&
+	if !isPrivateIPAddress(eventHandler.DNSProxy, event.IPAddress, event.Port) &&
 		strings.Compare(event.IPAddress, "::1") != 0 &&
 		strings.Compare(event.IPAddress, AzureIPAddress) != 0 &&
 		strings.Compare(event.IPAddress, MetadataIPAddress) != 0 {
@@ -343,7 +343,7 @@ func (eventHandler *EventHandler) GetToolChain(ppid, exe string) *Tool {
 	return &tool
 }
 
-func isPrivateIPAddress(dnsProxy *DNSProxy, ipAddress string) bool {
+func isPrivateIPAddress(dnsProxy *DNSProxy, ipAddress string, port string) bool {
 
 	// In some cases a domain-name resolves to localhost i.e 127.0.0.1.
 	// In such cases the domain-name is not shown in insights-log.CHECKOUT: (https://github.com/Automattic/vip-go-mu-plugins/pull/2815#issuecomment-1014226438)
@@ -352,7 +352,13 @@ func isPrivateIPAddress(dnsProxy *DNSProxy, ipAddress string) bool {
 	// Checking if the reverseLookup return a valid domain.
 	// i.e 127.0.0.1 --> valid.domain.com
 	if reverseLook != "" {
-		return false
+		allowedEndpoint := dnsProxy.AllowedEndpoints[reverseLook]
+		for _, endpoint := range allowedEndpoint {
+			if port == fmt.Sprintf("%d", endpoint.port) {
+				return false
+			}
+		}
+		return true
 	}
 
 	if ipAddress == AllZeros {
