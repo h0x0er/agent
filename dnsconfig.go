@@ -166,7 +166,7 @@ func (d *DnsConfig) SetDockerDNSServer(cmd Command, configPath, tempDir string) 
 	}
 
 	if cmd == nil {
-		cmd = exec.Command("/bin/sh", "-c", "sudo systemctl daemon-reload && sudo systemctl restart docker")
+		cmd = exec.Command("/bin/sh", "-c", "sudo systemctl daemon-reload && sudo systemctl reload docker")
 	}
 
 	err = cmd.Run()
@@ -186,7 +186,7 @@ func (d *DnsConfig) RevertDockerDNSServer(cmd Command, configPath string) error 
 		}
 
 		if cmd == nil {
-			cmd = exec.Command("/bin/sh", "-c", "sudo systemctl daemon-reload && sudo systemctl restart docker")
+			cmd = exec.Command("/bin/sh", "-c", "sudo systemctl daemon-reload && sudo systemctl reload docker")
 		}
 
 		err = cmd.Run()
