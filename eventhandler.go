@@ -54,7 +54,7 @@ func (eventHandler *EventHandler) handleFileEvent(event *Event) {
 	}
 
 	if strings.Contains(event.FileName, "resolved.conf") {
-		WriteAnnotation(fmt.Sprintf("%s Overwrite detected for %s", StepSecurityAnnotationPrefix, resolvedConfigPath))
+		WriteAnnotation(fmt.Sprintf("%s Overwrite detected for %s by Exe: %s", StepSecurityAnnotationPrefix, resolvedConfigPath, event.Exe))
 	}
 
 	// Uncomment to log file writes (only uncomment in INT env)
