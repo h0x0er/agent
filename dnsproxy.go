@@ -183,6 +183,7 @@ func (proxy *DNSProxy) getIPByDomain(domain string) (string, error) {
 	}
 
 	matchesAnyWildcard := false
+	wildcardPort := ""
 
 	if proxy.EgressPolicy == EgressPolicyBlock {
 		if strings.HasSuffix(domain, ".internal.") {
@@ -190,7 +191,7 @@ func (proxy *DNSProxy) getIPByDomain(domain string) (string, error) {
 			return "", fmt.Errorf("cannot resolve internal domains")
 		}
 
-		matchesAnyWildcard = proxy.matchAnyWildcard(domain)
+		matchesAnyWildcard, wildcardPort = proxy.matchAnyWildcard(domain)
 
 		if !proxy.isAllowedDomain(domain) && !matchesAnyWildcard {
 			go WriteLog(fmt.Sprintf("domain not allowed: %s", domain))
@@ -221,11 +222,7 @@ func (proxy *DNSProxy) getIPByDomain(domain string) (string, error) {
 	}
 
 	if matchesAnyWildcard {
-		// TODO: add ip address to iptables.
-		// var ipAddressEndpoints []ipAddressEndpoint
-		// // TODO: Add logic to extract ports from wildcard domain
-		// ipAddressEndpoints = append(ipAddressEndpoints, ipAddressEndpoint{answer.Data, "443"})
-		if err := InsertAllowRule(proxy.Iptables, answer.Data, "443"); err != nil {
+		if err := InsertAllowRule(proxy.Iptables, answer.Data, wildcardPort); err != nil {
 			WriteLog(fmt.Sprintf("Error setting firewall for %s:  %v", domain, err))
 			go WriteLog("[DnsProxy] Error while adding endpoint to iptables")
 			// RevertChanges(iptables, nflog, cmd, resolvdConfigPath, dockerDaemonConfigPath, dnsConfig, sudo)
@@ -244,13 +241,13 @@ func (proxy *DNSProxy) getIPByDomain(domain string) (string, error) {
 
 }
 
-func (proxy *DNSProxy) matchAnyWildcard(domain string) bool {
+func (proxy *DNSProxy) matchAnyWildcard(domain string) (bool, string) {
 	for wildcard := range proxy.WildCardEndpoints {
 		if matchWildcardDomain(wildcard, domain) {
-			return true
+			return true, fmt.Sprintf("%v", proxy.WildCardEndpoints[wildcard][0].port)
 		}
 	}
-	return false
+	return false, ""
 }
 
 func (proxy *DNSProxy) processTypeA(q *dns.Question, requestMsg *dns.Msg) (*dns.RR, error) {
