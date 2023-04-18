@@ -178,3 +178,27 @@ func Test_getDomainFromCloudAppFormat(t *testing.T) {
 		})
 	}
 }
+
+func Test_matchWildcardDomain(t *testing.T) {
+	type args struct {
+		pattern string
+		target  string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		// TODO: Add test cases.
+		{name: "abc.github.com", args: args{pattern: "*.github.com", target: "abc.github.com"}, want: true},
+		{name: "xyz.abc.github.com", args: args{pattern: "*.github.com", target: "xyz.abc.github.com"}, want: true},
+		{name: "mno.github.com", args: args{pattern: "*.google.com", target: "abc.github.com"}, want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := matchWildcardDomain(tt.args.pattern, tt.args.target); got != tt.want {
+				t.Errorf("matchWildcardDomain() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
