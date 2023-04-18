@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 
 tag_num="$1"
