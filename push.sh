@@ -8,6 +8,6 @@ git add .
 git commit -m "refactor: $commit_msg"
 
 
- create and push the tag
+#create and push the tag
 git tag $tag_num
 git push origin $tag_num

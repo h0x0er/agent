@@ -223,8 +223,8 @@ func (proxy *DNSProxy) getIPByDomain(domain string) (string, error) {
 	if matchesAnyWildcard {
 		// TODO: add ip address to iptables.
 		var ipAddressEndpoints []ipAddressEndpoint
-		// TODO: Add logic to extract ports
-		ipAddressEndpoints = append(ipAddressEndpoints, ipAddressEndpoint{domain, "443"})
+		// TODO: Add logic to extract ports from wildcard domain
+		ipAddressEndpoints = append(ipAddressEndpoints, ipAddressEndpoint{answer.Data, "443"})
 		if err := addBlockRulesForGitHubHostedRunner(proxy.Iptables, ipAddressEndpoints); err != nil {
 			WriteLog(fmt.Sprintf("Error setting firewall for %s:  %v", domain, err))
 			go WriteLog("[DnsProxy] Error while adding endpoint to iptables")
@@ -245,7 +245,7 @@ func (proxy *DNSProxy) getIPByDomain(domain string) (string, error) {
 }
 
 func (proxy *DNSProxy) matchAnyWildcard(domain string) bool {
-	for wildcard, _ := range proxy.WildCardEndpoints {
+	for wildcard := range proxy.WildCardEndpoints {
 		if matchWildcardDomain(wildcard, domain) {
 			return true
 		}
